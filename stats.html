@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="fr">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow">
+<title>SNK Studio · Mesures</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,800&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<!-- Tableau de bord des statistiques anonymes (supabase/stats.sql). Réservé au compte SNK « host » :
+     la page ne contient aucune donnée, tout vient de la RPC studio_stats, qui refuse les autres comptes. -->
+<style>
+:root{--night:#0a0c11;--panel:rgba(13,15,21,.94);--card:#11141b;--line:rgba(236,231,223,.14);--ink:#ece7df;--mute:#9b958b;--amber:#ffb35c;--cyan:#7fd6ff;--rec:#ff4d4d;
+  --f-display:"Bricolage Grotesque","Arial Black",system-ui,sans-serif;--f-body:Inter,system-ui,-apple-system,"Segoe UI",sans-serif;--f-mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;color-scheme:dark}
+*{box-sizing:border-box}
+body{margin:0;background:var(--night);color:var(--ink);font:400 15px/1.5 var(--f-body);-webkit-font-smoothing:antialiased}
+main{max-width:1080px;margin:0 auto;padding:28px 16px 64px}
+header{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:24px}
+.type{font:500 11px/1 var(--f-mono);letter-spacing:.14em;text-transform:uppercase;color:var(--mute)}
+h1{font:800 28px/1.1 var(--f-display);margin:6px 0 0}
+h2{font:800 18px/1.2 var(--f-display);margin:0 0 12px}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:999px;padding:3px}
+.seg button{font:500 13px var(--f-body);color:var(--mute);background:none;border:0;border-radius:999px;padding:7px 12px;cursor:pointer;transition:all .24s ease-out}
+.seg button[aria-pressed=true]{background:var(--amber);color:#1a1206}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:12px}
+.card,.box{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px}
+.card b{display:block;font:800 28px/1.1 var(--f-display);margin-top:8px;font-variant-numeric:tabular-nums}
+.card b.sm{font-size:18px;line-height:1.3}
+.card i{font:400 13px var(--f-body);color:var(--mute);font-style:normal}
+.box{margin-bottom:12px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:12px}
+svg{display:block;width:100%;height:auto}
+.axis{font:400 11px var(--f-mono);fill:var(--mute)}
+.lg{display:flex;gap:16px;font:400 13px var(--f-body);color:var(--mute);margin-bottom:8px}
+.lg span::before{content:"";display:inline-block;width:10px;height:3px;border-radius:2px;margin-right:6px;vertical-align:middle;background:currentColor}
+.top{list-style:none;margin:0;padding:0}
+.top li{display:grid;grid-template-columns:1fr auto;gap:4px 12px;font-size:13px;padding:6px 0;border-top:1px solid var(--line)}
+.top li:first-child{border-top:0}
+.top .bar{grid-column:1/-1;height:4px;border-radius:2px;background:rgba(255,179,92,.16);overflow:hidden}
+.top .bar>span{display:block;height:100%;background:var(--amber)}
+.top b{font:500 13px var(--f-mono);color:var(--ink)}
+.empty{color:var(--mute);font-size:13px}
+.gate{max-width:420px;margin:12vh auto 0;text-align:left}
+.gate p{color:#cfc9bf;margin:8px 0 20px}
+input{width:100%;font:400 15px var(--f-body);color:var(--ink);background:#0d1016;border:1px solid var(--line);border-radius:10px;padding:12px 14px;margin-bottom:10px}
+input:focus{outline:2px solid var(--amber);outline-offset:1px}
+.go{width:100%;font:600 15px var(--f-body);color:#1a1206;background:var(--amber);border:0;border-radius:10px;padding:12px;cursor:pointer}
+.go:disabled{opacity:.5}
+.ghost{font:500 13px var(--f-body);color:var(--mute);background:none;border:0;cursor:pointer;padding:0;text-decoration:underline}
+.msg{font-size:13px;color:var(--mute);min-height:20px;margin-top:10px}
+.note{font-size:13px;color:var(--mute);margin-top:20px}
+[hidden]{display:none!important}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+<body>
+<main>
+  <section class="gate" id="gate" hidden>
+    <div class="type">SNK Studio · Mesures</div>
+    <h1>Réservé à l'hôte</h1>
+    <p id="gtxt">Connecte-toi avec ton compte SNK. Le lien arrive par e-mail.</p>
+    <form id="gf"><input id="gm" type="email" autocomplete="email" placeholder="ton@e-mail" aria-label="E-mail" required>
+    <button class="go" id="gb" type="submit">Recevoir le lien</button></form>
+    <div class="msg" id="gmsg" aria-live="polite"></div>
+    <button class="ghost" id="gout" type="button" hidden>Se déconnecter</button>
+  </section>
+
+  <section id="dash" hidden>
+    <header>
+      <div><div class="type">SNK Studio · statistiques anonymes</div><h1>Qui vient, qui revient, ce qu'ils font</h1></div>
+      <div class="seg" role="group" aria-label="Période">
+        <button type="button" data-d="7" aria-pressed="false">7 j</button><button type="button" data-d="30" aria-pressed="true">30 j</button><button type="button" data-d="90" aria-pressed="false">90 j</button>
+      </div>
+    </header>
+    <div class="cards" id="cards"></div>
+    <div class="box"><h2>Par jour</h2><div class="lg"><span style="color:var(--amber)">Visites</span><span style="color:var(--cyan)">Visiteurs uniques</span></div><div id="chart"></div></div>
+    <div class="grid">
+      <div class="box"><h2>Postes</h2><ul class="top" id="t-seats"></ul></div>
+      <div class="box"><h2>Actions</h2><ul class="top" id="t-actions"></ul></div>
+      <div class="box"><h2>444 · essayées</h2><ul class="top" id="t-tried"></ul></div>
+      <div class="box"><h2>444 · clic Acheter</h2><ul class="top" id="t-bought"></ul></div>
+    </div>
+    <p class="note">Aucun pseudo, aucun e-mail, aucune adresse IP : un identifiant aléatoire par navigateur. Les visiteurs en « Do Not Track » ne sont pas comptés. <button class="ghost" id="out" type="button">Se déconnecter</button></p>
+  </section>
+</main>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.3/dist/umd/supabase.js"></script>
+<script>
+(()=>{
+const SB_URL='https://csenvzufrnvrmnvghece.supabase.co',SB_KEY='sb_publishable_E10hR2IFmralJmEFjFa7fQ_M-abUMBW'; // clé publique
+const $=s=>document.querySelector(s),esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const nf=new Intl.NumberFormat('fr-FR'),pct=new Intl.NumberFormat('fr-FR',{style:'percent',maximumFractionDigits:0});
+const NAMES={piano:'Piano',desk:'Régie',synth:'Synthé',guitars:'Guitares',pads:'SNK·16 (pads)',seat:'Assise',rec:'Prise',beat:'Beat',invite:'Invitation',clip:'Clip à la TV',disque:'Disque ouvert',crew:'Mur de l’équipe'};
+let sb=null,days=30;
+try{sb=window.supabase.createClient(SB_URL,SB_KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});}catch(e){}
+
+function gate(txt,signedIn){$('#dash').hidden=true;$('#gate').hidden=false;if(txt)$('#gtxt').textContent=txt;$('#gf').hidden=!!signedIn;$('#gout').hidden=!signedIn;}
+function dur(s){if(s==null)return '—';s=Math.round(s);return s<60?s+' s':s<3600?Math.floor(s/60)+' min '+String(s%60).padStart(2,'0'):Math.floor(s/3600)+' h '+String(Math.floor(s%3600/60)).padStart(2,'0');}
+function top(id,rows){const el=$(id),L=rows||[];if(!L.length){el.innerHTML='<li class="empty">Rien encore.</li>';return;}const mx=Math.max(...L.map(r=>r.n));
+  el.innerHTML=L.map(r=>`<li><span>${esc(NAMES[r.k]||r.k)}</span><b>${nf.format(r.n)}</b><div class="bar"><span style="width:${(r.n/mx*100).toFixed(1)}%"></span></div></li>`).join('');}
+function chart(rows,since){ // une valeur par jour, jours vides compris
+  const D=[],m=new Map((rows||[]).map(r=>[r.d,r])),t0=new Date(since);t0.setUTCHours(0,0,0,0);
+  for(let d=new Date(t0);d<=new Date();d.setUTCDate(d.getUTCDate()+1)){const k=d.toISOString().slice(0,10),r=m.get(k);D.push({k,a:r?r.visits:0,b:r?r.visitors:0});}
+  const W=1000,H=240,pl=36,pr=8,pt=10,pb=26,mx=Math.max(4,...D.map(d=>d.a)),n=Math.max(1,D.length-1),x=i=>pl+(W-pl-pr)*i/n,y=v=>pt+(H-pt-pb)*(1-v/mx);
+  const line=(f,c)=>`<polyline fill="none" stroke="${c}" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round" points="${D.map((d,i)=>x(i).toFixed(1)+','+y(f(d)).toFixed(1)).join(' ')}"/>`;
+  const g=[0,.5,1].map(f=>{const v=Math.round(mx*f);return `<line x1="${pl}" x2="${W-pr}" y1="${y(v)}" y2="${y(v)}" stroke="rgba(236,231,223,.08)"/><text class="axis" x="${pl-6}" y="${y(v)+4}" text-anchor="end">${v}</text>`;}).join('');
+  const step=Math.ceil(D.length/6),lab=D.map((d,i)=>i%step?'':`<text class="axis" x="${x(i)}" y="${H-6}" text-anchor="middle">${d.k.slice(8)}/${d.k.slice(5,7)}</text>`).join('');
+  const area=`<polygon fill="rgba(255,179,92,.10)" points="${x(0)},${y(0)} ${D.map((d,i)=>x(i).toFixed(1)+','+y(d.a).toFixed(1)).join(' ')} ${x(D.length-1)},${y(0)}"/>`;
+  $('#chart').innerHTML=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Visites et visiteurs uniques par jour">${g}${area}${line(d=>d.a,'var(--amber)')}${line(d=>d.b,'var(--cyan)')}${lab}</svg>`;}
+
+async function load(){const r=await sb.rpc('studio_stats',{p_days:days});
+  if(r.error){const c=r.error.code;gate(c==='42501'?'Ce compte n’a pas le rôle hôte.':c==='PGRST202'||c==='42883'?'La base des mesures n’est pas encore installée (supabase/stats.sql).':'Lecture impossible : '+r.error.message,true);return;}
+  const s=r.data||{},R=s.ret7||{};$('#gate').hidden=true;$('#dash').hidden=false;
+  const C=[['Visites',nf.format(s.visits||0),days+' derniers jours'],['Visiteurs uniques',nf.format(s.visitors||0),nf.format(s.newVisitors||0)+' nouveaux'],
+    ['Retour à 7 jours',R.cohort?pct.format(R.back/R.cohort):'—',R.cohort?R.back+' sur '+R.cohort+' arrivés il y a 7 j +':'pas encore assez de recul'],
+    ['Durée médiane',dur(s.medianSec),'par visite, onglet visible'],['Retours',nf.format(s.returns||0),'visites après 30 min d’absence'],
+    ['Appareils',Object.entries(s.devices||{}).map(([k,v])=>({pc:'Ordi',touch:'Tactile',lite:'Léger'}[k]||k)+' '+v).join(' · ')||'—','']];
+  $('#cards').innerHTML=C.map(c=>`<div class="card"><div class="type">${c[0]}</div><b${c[0]==='Appareils'?' class="sm"':''}>${esc(c[1])}</b><i>${esc(c[2])}</i></div>`).join('');
+  chart(s.daily,s.since);top('#t-seats',s.seats);top('#t-actions',s.actions);top('#t-tried',s.tried444);top('#t-bought',s.bought444);}
+
+async function boot(){if(!sb){gate('Connexion indisponible (bibliothèque non chargée).');return;}
+  const {data}=await sb.auth.getSession();if(!data||!data.session){gate();return;}load();}
+
+$('#gf').addEventListener('submit',async e=>{e.preventDefault();const m=$('#gm').value.trim();if(!m)return;$('#gb').disabled=true;
+  const r=await sb.auth.signInWithOtp({email:m,options:{shouldCreateUser:false,emailRedirectTo:location.origin+location.pathname}});$('#gb').disabled=false;
+  $('#gmsg').textContent=r.error?'Envoi impossible : '+r.error.message:'Lien envoyé. Ouvre-le sur cet appareil.';});
+const out=async()=>{await sb.auth.signOut();gate('Déconnecté.');};$('#out').addEventListener('click',out);$('#gout').addEventListener('click',out);
+document.querySelectorAll('[data-d]').forEach(b=>b.addEventListener('click',()=>{days=+b.dataset.d;document.querySelectorAll('[data-d]').forEach(x=>x.setAttribute('aria-pressed',x===b));load();}));
+if(sb)sb.auth.onAuthStateChange((ev)=>{if(ev==='SIGNED_IN')load();});
+boot();
+})();
+</script>
+</body>
+</html>
